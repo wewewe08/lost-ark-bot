@@ -42,7 +42,7 @@ class FindBuild(commands.Cog):
         for build in builds:
             titleWrapper = build.find('h2', attrs={'class': '_title_2sj5k_62'})
             title = (titleWrapper.text.strip()).lower()
-            if buildKeyword in title:
+            if buildKeyword.lower() in title:
                 imagediv = build.find('div', attrs={'class': '_imageWrapper_2sj5k_35'})
                 image = imagediv.find('img')['src']
                 link = build.find('a')['href']
