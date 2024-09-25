@@ -1,3 +1,4 @@
 .env
 chromedriver.exe
-/cogs/seeds.json
+/cogs/locations.json
+/cogs/dungeons.json

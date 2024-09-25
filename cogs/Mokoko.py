@@ -12,11 +12,9 @@ class Mokoko(commands.Cog):
         print("mokoko is ready")
 
     @commands.command()
-    async def mokoko(self, ctx, place_name):
-        mokoko_icon = "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fassets.maxroll.gg%2Fwordpress%2FLA_Mokko_Seed.png&f=1&nofb=1&ipt=fbf387d4246382bf449f0b6ed1dc072d05f033ea5237501c09c1d88c9b1cce86&ipo=images"
-
+    async def mokoko(self, ctx, *, place_name: str):
         try:
-            file = open("./cogs/seeds.json")
+            file = open("./cogs/locations.json")
             data = json.load(file)
         except FileNotFoundError:
             await ctx.send("The JSON file was not found.")
@@ -55,7 +53,6 @@ class Mokoko(commands.Cog):
             inline=False
         )
 
-        #embed.set_thumbnail(url=mokoko_icon)
         embed.set_image(url=data[keyName])
         await ctx.send(embed=embed)
 

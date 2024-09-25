@@ -52,10 +52,12 @@ class Builds(commands.Cog):
 
     @commands.command()
     async def builds(self, ctx):
+        buffer = await ctx.send("> **Searching for builds...**")
         builds = self.scrape_maxroll_builds()
+        await buffer.delete()
 
         if not builds:
-            await ctx.send("No builds found or an error occurred.")
+            await ctx.send("**No builds found or an error occurred.**")
             return
 
         builds_per_page = 5

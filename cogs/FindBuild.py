@@ -55,11 +55,13 @@ class FindBuild(commands.Cog):
         return build_data
 
     @commands.command()
-    async def findbuild(self, ctx, build):
+    async def findbuild(self, ctx, *, build: str):
+        buffer = await ctx.send("> **Searching for builds...**")
         builds = self.scrape_maxroll_build(build)
+        await buffer.delete()
 
         if not builds:
-            await ctx.send("No builds found or an error occurred.")
+            await ctx.send("**No builds found or an error occurred.**")
             return
 
         for build in builds:
