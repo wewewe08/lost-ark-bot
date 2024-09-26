@@ -13,7 +13,7 @@ bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 #startup
 @bot.event
 async def on_ready():
-    await bot.change_presence(activity=discord.Activity(type = discord.ActivityType.listening, name = "'!' prefix"))
+    await bot.change_presence(activity=discord.Activity(type = discord.ActivityType.listening, name = "!help to list commands"))
     print("Bot is running.")
 
 @bot.event

@@ -14,35 +14,14 @@ class FindBuild(commands.Cog):
     async def on_ready(self):
         print("findbuilds is ready")
 
-    def scrape_maxroll_build(self, buildKeyword):
-        url = 'https://maxroll.gg/lost-ark/category/build-guides' 
-
-        options = Options()
-        options.add_argument("--headless=old")
-
-        driver = webdriver.Chrome(options=options)
-        driver.get(url)
-        time.sleep(1) #wait for website to load
-        
-        last_height = driver.execute_script("return document.body.scrollHeight") #check where you're on the page
-        #load all builds
-        while True:
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);") #scroll to the bottom
-            time.sleep(1)
-            new_height = driver.execute_script("return document.body.scrollHeight")
-            if new_height == last_height:
-                break
-            last_height = new_height
-
-        soup = BeautifulSoup(driver.page_source, 'html.parser')
-        driver.quit()
-        builds = soup.find_all('div', attrs={'class': 'border-grey-extra'})
+    def load_builds(self, builds, buildKeyword):
         build_data = []
 
+        print("loading builds")
         for build in builds:
             titleWrapper = build.find('h2', attrs={'class': '_title_2sj5k_62'})
             title = (titleWrapper.text.strip()).lower()
-            if buildKeyword in title:
+            if buildKeyword.lower() in title:
                 imagediv = build.find('div', attrs={'class': '_imageWrapper_2sj5k_35'})
                 image = imagediv.find('img')['src']
                 link = build.find('a')['href']
@@ -52,17 +31,22 @@ class FindBuild(commands.Cog):
                     'link': link,
                     'image': image
                 })
+        print(build_data)
         return build_data
 
     @commands.command()
-    async def findbuild(self, ctx, build):
-        builds = self.scrape_maxroll_build(build)
+    async def findbuild(self, ctx, *, className: str):
+        buffer = await ctx.send("> **Searching for builds...**")
+        webscraper_cog = self.bot.get_cog("WebScraper")
+        builds = webscraper_cog.scrape_maxroll_builds()
+        loaded_builds = self.load_builds(builds, className)
+        await buffer.delete()
 
-        if not builds:
-            await ctx.send("No builds found or an error occurred.")
+        if loaded_builds == []:
+            await ctx.send("**No builds found or an error occurred.**")
             return
 
-        for build in builds:
+        for build in loaded_builds:
             embed = discord.Embed(
                 title="Maxroll Lost Ark Builds 📖", 
                 color=0xFFD700
