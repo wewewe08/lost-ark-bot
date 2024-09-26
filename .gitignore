@@ -4,3 +4,4 @@ chromedriver.exe
 /cogs/dungeons.json
 /cogs/dungeon_images/*.jpg
 /cogs/dungeon_images/*.png
+__pycache__/
