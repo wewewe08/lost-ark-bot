@@ -13,14 +13,10 @@ class Mokoko(commands.Cog):
 
     @commands.command()
     async def mokoko(self, ctx, *, place_name: str):
-        try:
-            file = open("./cogs/locations.json")
-            data = json.load(file)
-        except FileNotFoundError:
-            await ctx.send("The JSON file was not found.")
-            return
-        except json.JSONDecodeError:
-            await ctx.send("The JSON file is not properly formatted.")
+        json_cog = self.bot.get_cog("ReadJSON")
+        data = json_cog.get_data("./cogs/locations.json")
+        if data == None:
+            await ctx.send("> **Something went wrong.**")
             return
 
         keys = data.keys()
@@ -37,9 +33,9 @@ class Mokoko(commands.Cog):
             return
         
         if len(names) > 1:
-            await ctx.send(f"> Your query is too vague. Did you mean:")
+            await ctx.send(f"> **Your query is too vague. Did you mean:**")
             for name in names:
-                await ctx.send(f"> {name.upper()}?")
+                await ctx.send(f"> **{name.upper()}?**")
             return
 
         embed = discord.Embed(

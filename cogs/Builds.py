@@ -14,31 +14,8 @@ class Builds(commands.Cog):
     async def on_ready(self):
         print("builds is ready")
 
-    def scrape_maxroll_builds(self):
-        url = 'https://maxroll.gg/lost-ark/category/build-guides' 
-
-        options = Options()
-        options.add_argument("--headless=old")
-
-        driver = webdriver.Chrome(options=options)
-        driver.get(url)
-        time.sleep(1) #wait for website to load
-        
-        last_height = driver.execute_script("return document.body.scrollHeight") #check where you're on the page
-        #load all builds
-        while True:
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);") #scroll to the bottom
-            time.sleep(1)
-            new_height = driver.execute_script("return document.body.scrollHeight")
-            if new_height == last_height:
-                break
-            last_height = new_height
-
-        soup = BeautifulSoup(driver.page_source, 'html.parser')
-        driver.quit()
-        builds = soup.find_all('div', attrs={'class': 'border-grey-extra'})
+    def load_builds(self, builds):
         build_data = []
-
         for build in builds:
             titlediv = build.find('div', attrs={'class': '_titleWrapper_2sj5k_62'})
             title = titlediv.find('h2').text.strip()
@@ -53,15 +30,17 @@ class Builds(commands.Cog):
     @commands.command()
     async def builds(self, ctx):
         buffer = await ctx.send("> **Searching for builds...**")
-        builds = self.scrape_maxroll_builds()
+        webscraper_cog = self.bot.get_cog("WebScraper")
+        builds = webscraper_cog.scrape_maxroll_builds()
+        loaded_builds = self.load_builds(builds)
         await buffer.delete()
 
-        if not builds:
+        if not loaded_builds:
             await ctx.send("**No builds found or an error occurred.**")
             return
 
         builds_per_page = 5
-        pages = [builds[i:i + builds_per_page] for i in range(0, len(builds), builds_per_page)]
+        pages = [loaded_builds[i:i + builds_per_page] for i in range(0, len(loaded_builds), builds_per_page)]
 
         def create_embed(page_index):
             embed = discord.Embed(
