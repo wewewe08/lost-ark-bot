@@ -6,7 +6,9 @@ from bs4 import BeautifulSoup
 import json
 import time
 import asyncio
-import re
+import re, os
+from datetime import datetime
+import pytz
 
 class Dungeon(commands.Cog):
     def __init__(self, bot):
@@ -15,6 +17,10 @@ class Dungeon(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("dungeons is ready")
+
+    def get_image():
+        image_list = os.listdir("/dungeon_images")
+        print(image_list)
 
     def scrape_wiki(self, url):
         if url == "https://lostark.wiki.fextralife.com/King+Luterra's+Tomb":
@@ -26,7 +32,7 @@ class Dungeon(commands.Cog):
 
         driver = webdriver.Chrome(options=options)
         driver.get(url)
-        time.sleep(2) #wait for website to load
+        time.sleep(1) #wait for website to load
 
         soup = BeautifulSoup(driver.page_source, 'html.parser')
         driver.quit()
@@ -72,11 +78,45 @@ class Dungeon(commands.Cog):
         print(section_data)
         return section_data
 
+    def check_valid_format(self, datetime_str):
+        try:
+            present_time = datetime.now(pytz.UTC)
+            current_year = present_time.year
+            full_datetime_str = f"{current_year}-{datetime_str}"
+            event_time = datetime.strptime(full_datetime_str, '%Y-%m-%d %I:%M %p')
+            local_tz = pytz.timezone("America/New_York")
+            localized_datetime = local_tz.localize(event_time)
+            utc_datetime = localized_datetime.astimezone(pytz.UTC)
+            epoch_time = int(utc_datetime.timestamp())
+            return True, epoch_time
+        except ValueError:
+            return False
+
     @commands.command()
-    async def dungeon(self, ctx, *, dungeonName:str):
+    async def dungeon(self, ctx, *, text:str):
+        split_text = text.split(" ")
+        dungeonName = " ".join(split_text[:-3])
+        datetime_str = " ".join(split_text[-3:])
+        valid_format, epoch_time = self.check_valid_format(datetime_str)
+        if  valid_format == False and epoch_time == None:
+            await ctx.send(f"> **Invalid format! Use MM-DD for the date and HH:MM (am/pm) for the time.**")
+            return
+
+        schedule_cog = self.bot.get_cog("Schedule")
+
         try:
             file = open("./cogs/locations.json")
             data = json.load(file)
+        except FileNotFoundError:
+            await ctx.send("The JSON file was not found.")
+            return
+        except json.JSONDecodeError:
+            await ctx.send("The JSON file is not properly formatted.")
+            return
+        
+        try:
+            file = open("./cogs/dungeons.json")
+            dungeon_data = json.load(file)
         except FileNotFoundError:
             await ctx.send("The JSON file was not found.")
             return
@@ -87,6 +127,7 @@ class Dungeon(commands.Cog):
         url = "https://lostark.wiki.fextralife.com/"
         current_dungeon = None
         current_roster = []
+        userid_list = []
         keys = data.keys()
         queries = []
 
@@ -113,6 +154,7 @@ class Dungeon(commands.Cog):
             return
 
         current_roster.append(ctx.author.display_name)
+        userid_list.append(ctx.author.id)
         
         buffer = await ctx.send("> **Loading...**")
         info = self.scrape_wiki(url)
@@ -127,10 +169,10 @@ class Dungeon(commands.Cog):
                 title="Dungeon Alert ⚔️",
                 color=0x71368a
             )
-            #embed.set_image(url="")
+
             embed.add_field(
                 name=f"{(ctx.author.display_name).upper()} wants to start a(n) {current_dungeon.upper()[:-10]} run!",
-                value="",
+                value=f"*Starts: <t:{epoch_time}>*",
                 inline=False
             )
 
@@ -149,6 +191,13 @@ class Dungeon(commands.Cog):
                 value=f"{info[0]['players']}",
                 inline=True
             )
+
+            dungeon_keys = dungeon_data.keys()
+            for key in dungeon_keys:
+                if dungeonName in key:
+                    if dungeon_data[key] == "": break
+                    embed.set_image(url=dungeon_data[key])
+
             embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar.url)
             return embed
 
@@ -164,22 +213,26 @@ class Dungeon(commands.Cog):
             try:
                 reaction, user = await self.bot.wait_for("reaction_add", timeout=60.0, check=check_add)
 
-                if user.id != ctx.author.id and len(current_roster) < 4 and reaction.emoji == "👍" and user.display_name not in current_roster:
+                if user.id != ctx.author.id and len(current_roster) < 4 and reaction.emoji == "👍" and user.id not in userid_list:
                     current_roster.append(user.display_name)
+                    userid_list.append(user.id)
                     await message.edit(embed=create_embed())
                     await ctx.send(f"> **{user.display_name} has joined the {current_dungeon.upper()[:-10]} party!**")
-                elif reaction.emoji == "👍" and user.display_name in current_roster:
+                elif reaction.emoji == "👍" and user.id in userid_list:
                     await ctx.send(f"> **You are already in the {current_dungeon.upper()[:-10]} party, {user.display_name}!**")
                 elif reaction.emoji == "👍" and len(current_roster) > 4:
                     await ctx.send(f"> **Sorry {user.display_name}, the {current_dungeon.upper()[:-10]} party is full!**")
-                elif user.id != ctx.author.id and reaction.emoji == "👎" and user.display_name in current_roster:
+                elif user.id != ctx.author.id and reaction.emoji == "👎" and user.id in userid_list:
                     current_roster.remove(user.display_name)
+                    userid_list.remove(user.id)
                     await message.edit(embed=create_embed())
                     await ctx.send(f"> **{user.display_name} has left the party!**")
                 await reaction.remove(user)
             
             except asyncio.TimeoutError:
                 await message.clear_reactions()
+                if schedule_cog is not None:
+                    await schedule_cog.schedule_task(ctx, userid_list, queries[0], datetime_str)
                 break
 
 async def setup(bot):
