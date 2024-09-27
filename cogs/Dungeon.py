@@ -1,14 +1,8 @@
 import discord
 from discord.ext import commands
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
-import json
-import time
 import asyncio
-import re, os
 from datetime import datetime
-import pytz
 
 class Dungeon(commands.Cog):
     def __init__(self, bot):

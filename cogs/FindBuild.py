@@ -1,10 +1,6 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 import discord
 from discord.ext import commands
-import time
-import asyncio
 
 class FindBuild(commands.Cog):
     def __init__(self, bot):
