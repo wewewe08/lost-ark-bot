@@ -28,12 +28,13 @@ class Schedule(commands.Cog):
         epoch_time = int(utc_datetime.timestamp())
         return epoch_time
 
-    async def schedule_task(self, ctx, party_list, dungeonName, event_time):
+    async def schedule_task(self, ctx, user_ids, dungeonName, event_time):
         present_time = datetime.now()
         delay = (event_time - present_time).total_seconds()
+        print(f"starting delay of {delay}")
         await asyncio.sleep(delay)
         print("delay ended")
-        for userid in party_list.keys():
+        for userid in user_ids:
             user = ctx.guild.get_member(userid)
             dungeonName = dungeonName.replace("+", " ")
             await ctx.send(f"> **{user.mention}, your {dungeonName.upper()} run is starting!**")
