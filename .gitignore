@@ -1,4 +1,5 @@
 .env
 *.exe
+*.txt
 /cogs/*.json
 __pycache__/
