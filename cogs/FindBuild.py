@@ -17,7 +17,6 @@ class FindBuild(commands.Cog):
     def load_builds(self, builds, buildKeyword):
         build_data = []
 
-        print("loading builds")
         for build in builds:
             titleWrapper = build.find('h2', attrs={'class': '_title_2sj5k_62'})
             title = (titleWrapper.text.strip()).lower()
@@ -31,7 +30,6 @@ class FindBuild(commands.Cog):
                     'link': link,
                     'image': image
                 })
-        print(build_data)
         return build_data
 
     @commands.command()

@@ -43,7 +43,8 @@ class Dungeon(commands.Cog):
 
         url = "https://lostark.wiki.fextralife.com/"
         current_dungeon = None
-        party_list = []
+        party_members = []
+        user_ids = []
 
         dungeon_names = dungeons.keys()
         queries = []
@@ -70,11 +71,8 @@ class Dungeon(commands.Cog):
             await ctx.send(f"> **{dungeonName.upper()} is not a valid dungeon.**")
             return
 
-        party_list.append({
-            'user-id': ctx.author.id,
-            'display-name': ctx.author.display_name
-        })
-        
+        party_members.append(ctx.author.display_name)
+        user_ids.append(ctx.author.id)
         buffer = await ctx.send("> **Loading...**")
         info = webscraper_cog.scrape_wiki(url)
         await buffer.delete()
@@ -83,7 +81,10 @@ class Dungeon(commands.Cog):
             await ctx.send("> **An error has occurred.**")
 
         def create_embed():
-            new_roster = "\n".join(username['display-name'] for username in party_list)
+            discriminator = ctx.author.discriminator
+            default_avatar_url = f'https://cdn.discordapp.com/embed/avatars/{int(discriminator) % 5}.png'
+
+            new_roster = "\n".join(party_members)
             embed = discord.Embed(
                 title="Dungeon Alert ⚔️",
                 color=0x71368a
@@ -116,7 +117,7 @@ class Dungeon(commands.Cog):
                     if dungeons[key] == "": break
                     embed.set_image(url=dungeons[key])
 
-            embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar.url)
+            embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar.url if ctx.author.avatar else default_avatar_url) # check for profile image
             return embed
 
         message = await ctx.send(embed=create_embed())
@@ -130,20 +131,18 @@ class Dungeon(commands.Cog):
         while True:
             try:
                 reaction, user = await self.bot.wait_for("reaction_add", timeout=60.0, check=check_add)
-
-                if user.id != ctx.author.id and len(party_list) < 4 and reaction.emoji == "👍" and user.id not in party_list.keys():
-                    party_list.append({
-                        'user-id': user.id,
-                        'display-name': user.display_name
-                    })
+                if user.id != ctx.author.id and len(user_ids) < 4 and reaction.emoji == "👍" and user.id not in user_ids:
+                    party_members.append(user.display_name)
+                    user_ids.append(user.id)
                     await message.edit(embed=create_embed())
                     await ctx.send(f"> **{user.display_name} has joined the {current_dungeon.upper()[:-10]} party!**")
-                elif reaction.emoji == "👍" and user.id in party_list.keys():
+                elif reaction.emoji == "👍" and user.id in user_ids:
                     await ctx.send(f"> **You are already in the {current_dungeon.upper()[:-10]} party, {user.display_name}!**")
-                elif reaction.emoji == "👍" and len(party_list) > 4:
+                elif reaction.emoji == "👍" and len(user_ids) > 4 and user.id not in user_ids:
                     await ctx.send(f"> **Sorry {user.display_name}, the {current_dungeon.upper()[:-10]} party is full!**")
-                elif user.id != ctx.author.id and reaction.emoji == "👎" and user.id in party_list.keys():
-                    party_list = [entry for entry in party_list if entry['user-id'] != user.id] # remove user from party
+                elif user.id != ctx.author.id and reaction.emoji == "👎" and user.id in user_ids:
+                    party_members.remove(user.display_name)
+                    user_ids.remove(user.id)
                     await message.edit(embed=create_embed())
                     await ctx.send(f"> **{user.display_name} has left the party!**")
                 await reaction.remove(user)
@@ -151,7 +150,7 @@ class Dungeon(commands.Cog):
             except asyncio.TimeoutError:
                 await message.clear_reactions()
                 if schedule_cog is not None:
-                    await schedule_cog.schedule_task(ctx, party_list, queries[0], event_time)
+                    await schedule_cog.schedule_task(ctx, user_ids, queries[0], event_time)
                 break
 
 async def setup(bot):
