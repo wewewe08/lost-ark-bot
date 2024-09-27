@@ -1,7 +1,4 @@
 .env
-chromedriver.exe
-/cogs/locations.json
-/cogs/dungeons.json
-/cogs/dungeon_images/*.jpg
-/cogs/dungeon_images/*.png
+*.exe
+/cogs/*.json
 __pycache__/

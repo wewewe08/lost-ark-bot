@@ -22,18 +22,19 @@ class Schedule(commands.Cog):
             return False
         
     def convert_epoch(self, event_time):
-        local_tz = pytz.timezone("America/New_York")
-        localized_datetime = local_tz.localize(event_time)
-        utc_datetime = localized_datetime.astimezone(pytz.UTC)
-        epoch_time = int(utc_datetime.timestamp())
+        present_time_utc = datetime.now(pytz.UTC)
+        event_time_utc = event_time.astimezone(pytz.UTC)
+        offset = event_time_utc - present_time_utc
+        new_event_time = present_time_utc.astimezone() + offset # convert to local timezone and add offset
+        new_event_time_utc = new_event_time.astimezone(pytz.UTC) # convert back to UTC
+        epoch_time = int(new_event_time_utc.timestamp())
         return epoch_time
 
     async def schedule_task(self, ctx, user_ids, dungeonName, event_time):
         present_time = datetime.now()
-        delay = (event_time - present_time).total_seconds()
-        print(f"starting delay of {delay}")
+        delay = (event_time - present_time).totalseconds()
+        print(f"waiting {delay} seconds")
         await asyncio.sleep(delay)
-        print("delay ended")
         for userid in user_ids:
             user = ctx.guild.get_member(userid)
             dungeonName = dungeonName.replace("+", " ")
