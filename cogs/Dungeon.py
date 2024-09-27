@@ -27,10 +27,10 @@ class Dungeon(commands.Cog):
         if  event_time == False:
             await ctx.send(f"> **Invalid format! Command usage: !dungeon (name) (MM-DD for the date) (HH:MM am/pm for the time)**")
             return
-        else:
-            epoch_time = schedule_cog.convert_epoch(event_time)
 
         dungeons = json_cog.get_data("./cogs/dungeons.json")
+        timezone_data = json_cog.get_data("./cogs/timezones.json")
+
         if dungeons == None:
             await ctx.send("> **Something went wrong.**")
             return
@@ -65,6 +65,26 @@ class Dungeon(commands.Cog):
             await ctx.send(f"> **{dungeonName.upper()} is not a valid dungeon.**")
             return
 
+        def check_timezone(timezone: discord.Message):
+            return timezone.author.id == ctx.author.id and timezone.channel.id == ctx.channel.id 
+
+        await ctx.send(f"> **What is your timezone? (EST/PST/CST, etc.)**")
+        current_timezone = None
+        try:
+            timezone = await self.bot.wait_for('message', check=check_timezone, timeout=60.0)
+            
+            for timezones in timezone_data:
+                if (timezone.content).upper() == timezones['abbreviation']:
+                    current_timezone = timezones['pytz_name']
+                    break
+            if current_timezone == None:
+                await ctx.send("> **This is not a valid timezone.**")
+                return
+        except asyncio.TimeoutError:
+            await ctx.send(f"> **Did not receive a response from {ctx.author}, timed out.**")
+            return
+
+        epoch_time = schedule_cog.convert_epoch(event_time, current_timezone)
         party_members.append(ctx.author.display_name)
         user_ids.append(ctx.author.id)
         buffer = await ctx.send("> **Loading...**")
