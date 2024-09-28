@@ -41,7 +41,7 @@ class Help(commands.Cog):
             inline=False
         )
 
-        embed.set_image(url="https://media1.tenor.com/m/oRVXTJsgYUcAAAAd/lostark-funny.gif")
+        #embed.set_image(url="https://media1.tenor.com/m/oRVXTJsgYUcAAAAd/lostark-funny.gif")
         await ctx.send(embed=embed)
 
 async def setup(bot):

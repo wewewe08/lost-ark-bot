@@ -1,7 +1,5 @@
 import discord
 from discord.ext import commands
-import json
-import os
 
 class Mokoko(commands.Cog):
     def __init__(self,bot):

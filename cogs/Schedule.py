@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from datetime import datetime, timedelta
+from datetime import datetime
 import asyncio
 import pytz
 
@@ -21,8 +21,8 @@ class Schedule(commands.Cog):
         except ValueError:
             return False
         
-    def convert_epoch(self, event_time):
-        local_tz = pytz.timezone("America/New_York")
+    def convert_epoch(self, event_time, timezone):
+        local_tz = pytz.timezone(timezone)
         localized_datetime = local_tz.localize(event_time)
         utc_datetime = localized_datetime.astimezone(pytz.UTC)
         epoch_time = int(utc_datetime.timestamp())
@@ -31,9 +31,8 @@ class Schedule(commands.Cog):
     async def schedule_task(self, ctx, user_ids, dungeonName, event_time):
         present_time = datetime.now()
         delay = (event_time - present_time).total_seconds()
-        print(f"starting delay of {delay}")
+        print(f"waiting {delay} seconds")
         await asyncio.sleep(delay)
-        print("delay ended")
         for userid in user_ids:
             user = ctx.guild.get_member(userid)
             dungeonName = dungeonName.replace("+", " ")
